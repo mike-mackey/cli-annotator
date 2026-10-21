@@ -56,3 +56,76 @@ test('masks public-key-code bodies and flags redacted lines', () => {
   assert.deepEqual(lines.map(({ n, indent, kind, block, opens }) => ({ n, indent, kind, block, opens })),
     parseConfig(text).lines.map(({ n, indent, kind, block, opens }) => ({ n, indent, kind, block, opens })));
 });
+
+const noFake = (t) => !/FAKE/i.test(t);
+
+test('a modifier word is never taken as the value (C1)', () => {
+  for (const t of [
+    ' isis authentication-mode simple plain FAKE1',
+    ' area-authentication-mode simple plain FAKE2',
+    ' peer 1.1.1.1 password simple plain FAKE7',
+  ]) {
+    const out = redactLine(t);
+    assert.ok(noFake(out), out);
+    assert.ok(out.includes('plain ****'), out);
+  }
+});
+
+test('unterminated %^%# blobs fail closed (I1)', () => {
+  assert.equal(redactLine(' cipher %^%#abc def'), ` cipher ${MASK}`);
+  assert.equal(redactLine('  %^%#abcdef'), `  ${MASK}`);
+  const text = [
+    'aaa',
+    ' local-user u1 password cipher %^%#AAAA',
+    'BBBB',
+    'BBB%^%#',
+    ' local-user u1 level 3',
+    '#',
+  ].join('\n');
+  const lines = redactLines(parseConfig(text).lines);
+  assert.deepEqual(lines.map(l => l.text), [
+    'aaa',
+    ` local-user u1 password cipher ${MASK}`,
+    MASK,
+    MASK,
+    ' local-user u1 level 3',
+    '#',
+  ]);
+  assert.deepEqual(lines.filter(l => l.redacted).map(l => l.n), [2, 3, 4]);
+});
+
+test('a wrapped blob keeps the indent of continuation lines', () => {
+  const text = 'a\n cipher %^%#X\n   YYYY\n   ZZ%^%# tail';
+  const out = redactLines(parseConfig(text).lines).map(l => l.text);
+  assert.deepEqual(out, ['a', ` cipher ${MASK}`, `   ${MASK}`, `   ${MASK} tail`]);
+});
+
+test('masks the remaining bare-secret forms (I2)', () => {
+  const cases = [
+    [' authentication-mode sha FAKE1', ' authentication-mode sha ****'],
+    [' authentication-mode md5 key-id 1 FAKE2', ' authentication-mode md5 key-id 1 ****'],
+    [' ospf authentication-mode md5 1 FAKE3', ' ospf authentication-mode md5 1 ****'],
+    [' mpls ldp md5-password cipher 1.1.1.1 FAKE4', ' mpls ldp md5-password cipher 1.1.1.1 ****'],
+    [' mpls ldp md5-password plain 1.1.1.1 FAKE4b', ' mpls ldp md5-password plain 1.1.1.1 ****'],
+    [' pre-shared-key FAKE5', ' pre-shared-key ****'],
+    [' shared-key FAKE6', ' shared-key ****'],
+    [' key-string FAKE7', ' key-string ****'],
+    ['snmp-agent community complex FAKE8', 'snmp-agent community complex ****'],
+    ['snmp-agent community read FAKE9', 'snmp-agent community read ****'],
+    ['snmp-agent community write FAKE10', 'snmp-agent community write ****'],
+    [' snmp-agent target-host x securityname FAKE11 v2c', ' snmp-agent target-host x securityname **** v2c'],
+    [' PASSWORD FAKE12', ' PASSWORD ****'],
+    [' Cipher FAKE13', ' Cipher ****'],
+    [' password $1C$FAKE14$', ` password ${MASK}`],
+  ];
+  for (const [input, want] of cases) assert.equal(redactLine(input), want, input);
+});
+
+test('leaves non-secret authentication and address lines unchanged (I2)', () => {
+  for (const t of [
+    ' ip address 1.1.1.1 255.255.255.0',
+    ' authentication-mode keychain KC1',
+    ' authentication-mode md5',
+    ' isis authentication-mode md5 key-id 1',
+  ]) assert.equal(redactLine(t), t);
+});
