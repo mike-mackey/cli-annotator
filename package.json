@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "node --test src/lib/",
+    "test": "node --test src/lib/ src/browser.test.js",
     "check-dumps": "node scripts/check-dumps.mjs"
   },
   "dependencies": {
