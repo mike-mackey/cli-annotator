@@ -2,3 +2,4 @@ node_modules/
 dist/
 # real device dumps contain secrets
 dumps/
+.superpowers/

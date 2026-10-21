@@ -1,0 +1,135 @@
+{
+  "format": "ontology-ui.topo-cli-annotation-bundle",
+  "formatVersion": 2,
+  "generatedAt": "2026-10-21T09:00:00.000Z",
+  "device": { "name": "NE8000", "softwareVersion": "V800R022C00SPC600" },
+  "mappings": [
+    { "id": "m-isis", "sourceType": "command", "featureId": "f-isis", "title": "isis", "view": "system view", "viewFamily": null,
+      "cliParameter": "process-id", "isKey": true, "keyHint": null,
+      "dte": { "id": "Twin_IGP", "entity": "IGP", "field": "igpId" }, "relation": "configures", "topology": ["isisprocess"] },
+    { "id": "m-net", "sourceType": "command", "featureId": "f-net", "title": "network-entity", "view": "is-is view", "viewFamily": null,
+      "cliParameter": "net-addr", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_IGP", "entity": "IGP", "field": "networkEntityId" }, "relation": "configures", "topology": ["isisprocess"] },
+    { "id": "m-isisen", "sourceType": "command", "featureId": "f-isisen", "title": "isis enable", "view": "100ge interface view", "viewFamily": null,
+      "cliParameter": null, "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_FixedNetworkLTP", "entity": "FixedNetworkLTP", "field": null }, "relation": "enables",
+      "topology": ["ethernetport", "vlaninterface", "ipv4interface", "isisinterface", "vpwssap", "l3vpnsap"] },
+    { "id": "m-ip", "sourceType": "command", "featureId": "f-ipaddr", "title": "ip address", "view": "100ge interface view", "viewFamily": null,
+      "cliParameter": "ip-address", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_FixedNetworkLTP", "entity": "FixedNetworkLTP", "field": "IP__addrv4" }, "relation": "configures",
+      "topology": ["ethernetport", "vlaninterface", "ipv4interface", "isisinterface", "vpwssap", "l3vpnsap"] },
+    { "id": "m-vlan", "sourceType": "command", "featureId": "f-vlan", "title": "vlan-type dot1q", "view": "100ge sub-interface view", "viewFamily": null,
+      "cliParameter": "vlan-id", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_FixedNetworkLTP", "entity": "FixedNetworkLTP", "field": "Eth__vlan" }, "relation": "configures",
+      "topology": ["ethernetport", "vlaninterface", "ipv4interface", "isisinterface", "vpwssap", "l3vpnsap"] },
+    { "id": "m-bind", "sourceType": "command", "featureId": "f-bind", "title": "ip binding vpn-instance", "view": "100ge interface view", "viewFamily": null,
+      "cliParameter": "vpn-instance-name", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_VRF", "entity": "VRF", "field": "vrfName" }, "relation": "references", "topology": ["l3vpninstance"] },
+    { "id": "m-l2vc", "sourceType": "command", "featureId": "f-l2vc", "title": "mpls l2vc", "view": "100ge sub-interface view", "viewFamily": null,
+      "cliParameter": "vc-id", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_PW", "entity": "PW", "field": "pwId" }, "relation": "configures", "topology": ["pw"] },
+    { "id": "m-rd", "sourceType": "command", "featureId": "f-rd", "title": "route-distinguisher", "view": "vpn instance view", "viewFamily": null,
+      "cliParameter": "route-distinguisher", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_VRF", "entity": "VRF", "field": "rd" }, "relation": "configures", "topology": ["l3vpninstance"] },
+    { "id": "m-rt", "sourceType": "command", "featureId": "f-rt", "title": "vpn-target", "view": "vpn instance view", "viewFamily": null,
+      "cliParameter": "vpn-target", "isKey": false, "keyHint": null,
+      "dte": { "id": "Twin_VRF", "entity": "VRF", "field": "rt" }, "relation": "configures", "topology": ["l3vpninstance"] },
+    { "id": "m-ltp", "sourceType": "view", "featureId": null, "title": "100ge interface view", "view": "100ge interface view", "viewFamily": null,
+      "cliParameter": null, "isKey": true, "keyHint": "interface 100GE <interface-number>",
+      "dte": { "id": "Twin_LTP", "entity": "LTP", "field": "name" }, "relation": "identifies", "topology": ["ethernetport"] },
+    { "id": "m-ltp-sub", "sourceType": "view", "featureId": null, "title": "100ge sub-interface view", "view": "100ge sub-interface view", "viewFamily": null,
+      "cliParameter": null, "isKey": true, "keyHint": "interface 100GE <interface-number>.<sub-number>",
+      "dte": { "id": "Twin_LTP", "entity": "LTP", "field": "name" }, "relation": "identifies", "topology": ["ethernetport"] },
+    { "id": "m-vrf", "sourceType": "view", "featureId": null, "title": "vpn instance view", "view": "vpn instance view", "viewFamily": null,
+      "cliParameter": "vpn-instance-name", "isKey": true, "keyHint": "ip vpn-instance <vpn-instance-name>",
+      "dte": { "id": "Twin_VRF", "entity": "VRF", "field": "vrfName" }, "relation": "identifies", "topology": ["l3vpninstance"] }
+  ],
+  "commands": {
+    "f-isis": { "title": "isis", "syntax": ["isis <process-id> [ vpn-instance <vpn-instance-name> ]", "undo isis <process-id>"],
+      "parentViews": ["system view"], "enableViews": ["is-is view"],
+      "parameters": [{ "name": "process-id", "description": "IS-IS process ID." }], "examples": ["isis 1"] },
+    "f-net": { "title": "network-entity", "syntax": ["network-entity <net-addr>", "undo network-entity <net-addr>"],
+      "parentViews": ["is-is view"], "enableViews": [],
+      "parameters": [{ "name": "net-addr", "description": "Network entity title." }], "examples": [] },
+    "f-isisen": { "title": "isis enable", "syntax": ["isis enable [ <process-id> ]", "undo isis enable"],
+      "parentViews": ["100ge interface view", "100ge sub-interface view"], "enableViews": [],
+      "parameters": [{ "name": "process-id", "description": "IS-IS process ID." }], "examples": [] },
+    "f-ipaddr": { "title": "ip address", "syntax": ["ip address <ip-address> { <mask> | <mask-length> } [ sub ]", "undo ip address"],
+      "parentViews": ["ge interface view", "100ge interface view", "loopback interface view"], "enableViews": [],
+      "parameters": [{ "name": "ip-address", "description": "IPv4 address." }, { "name": "mask", "description": "Mask." }], "examples": [] },
+    "f-vlan": { "title": "vlan-type dot1q", "syntax": ["vlan-type dot1q <vlan-id>", "undo vlan-type dot1q"],
+      "parentViews": ["100ge sub-interface view"], "enableViews": [],
+      "parameters": [{ "name": "vlan-id", "description": "VLAN ID." }], "examples": [] },
+    "f-bind": { "title": "ip binding vpn-instance", "syntax": ["ip binding vpn-instance <vpn-instance-name>", "undo ip binding vpn-instance <vpn-instance-name>"],
+      "parentViews": ["ge interface view", "100ge interface view"], "enableViews": [],
+      "parameters": [{ "name": "vpn-instance-name", "description": "VPN instance name." }], "examples": [] },
+    "f-l2vc": { "title": "mpls l2vc", "syntax": [
+        "mpls l2vc <ip-address> <vc-id> [ tunnel-policy <policy-name> ] [ control-word | no-control-word ] [ raw | tagged ]",
+        "mpls l2vc instance-name <instance-name> <ip-address> <vc-id> [ control-word | no-control-word ] [ raw | tagged ]",
+        "undo mpls l2vc"],
+      "parentViews": ["ge sub-interface view", "100ge sub-interface view"], "enableViews": [],
+      "parameters": [{ "name": "vc-id", "description": "VC ID." }], "examples": [] },
+    "f-rd": { "title": "route-distinguisher", "syntax": ["route-distinguisher <route-distinguisher>"],
+      "parentViews": ["vpn instance view"], "enableViews": [],
+      "parameters": [{ "name": "route-distinguisher", "description": "RD." }], "examples": [] },
+    "f-rt": { "title": "vpn-target", "syntax": ["vpn-target <vpn-target> &<1-8> [ both | export-extcommunity | import-extcommunity ]"],
+      "parentViews": ["vpn instance view"], "enableViews": [],
+      "parameters": [{ "name": "vpn-target", "description": "VPN target." }], "examples": [] }
+  },
+  "views": {
+    "system view": { "path": [
+      { "view": "user view", "entryCommand": null, "params": [] },
+      { "view": "system view", "entryCommand": "system-view", "params": [] } ] },
+    "is-is view": { "path": [
+      { "view": "user view", "entryCommand": null, "params": [] },
+      { "view": "system view", "entryCommand": "system-view", "params": [] },
+      { "view": "is-is view", "entryCommand": null, "params": [] } ] },
+    "100ge interface view": { "path": [
+      { "view": "user view", "entryCommand": null, "params": [] },
+      { "view": "system view", "entryCommand": "system-view", "params": [] },
+      { "view": "100ge interface view", "entryCommand": "interface 100GE <interface-number>", "params": ["interface-number"] } ] },
+    "100ge sub-interface view": { "path": [
+      { "view": "user view", "entryCommand": null, "params": [] },
+      { "view": "system view", "entryCommand": "system-view", "params": [] },
+      { "view": "100ge sub-interface view", "entryCommand": "interface 100GE <interface-number>.<sub-number>", "params": ["interface-number", "sub-number"] } ] },
+    "vpn instance view": { "path": [
+      { "view": "user view", "entryCommand": null, "params": [] },
+      { "view": "system view", "entryCommand": "system-view", "params": [] },
+      { "view": "vpn instance view", "entryCommand": "ip vpn-instance <vpn-instance-name>", "params": ["vpn-instance-name"] } ] }
+  },
+  "viewIndex": {
+    "system view": { "entryCommand": "system-view", "params": [], "parentView": null },
+    "ge interface view": { "entryCommand": "interface GigabitEthernet <interface-number>", "params": ["interface-number"], "parentView": "system view" },
+    "ge sub-interface view": { "entryCommand": "interface GigabitEthernet <interface-number>.<sub-number>", "params": ["interface-number", "sub-number"], "parentView": "system view" },
+    "100ge interface view": { "entryCommand": "interface 100GE <interface-number>", "params": ["interface-number"], "parentView": "system view" },
+    "100ge sub-interface view": { "entryCommand": "interface 100GE <interface-number>.<sub-number>", "params": ["interface-number", "sub-number"], "parentView": "system view" },
+    "loopback interface view": { "entryCommand": "interface LoopBack <loopback-number>", "params": ["loopback-number"], "parentView": "system view" },
+    "vpn instance view": { "entryCommand": "ip vpn-instance <vpn-instance-name>", "params": ["vpn-instance-name"], "parentView": "system view" },
+    "vpn instance ipv4 address family view": { "entryCommand": "ipv4-family", "params": [], "parentView": "vpn instance view" },
+    "is-is view": { "entryCommand": null, "params": [], "parentView": "system view", "enteredBy": ["f-isis"] }
+  },
+  "dteEntities": {
+    "Twin_IGP": { "logicalName": "IGP", "topology": [
+      { "entity": "isisprocess", "schema": "igplayer-specific-isis", "type": "node", "attributes": ["igpId"], "via": ["schema"] } ] },
+    "Twin_FixedNetworkLTP": { "logicalName": "FixedNetworkLTP", "topology": [
+      { "entity": "ethernetport", "schema": "layer2-specific-ethernet", "type": "tp", "attributes": ["name"], "via": ["schema"] },
+      { "entity": "vlaninterface", "schema": "layer2-specific-ethernet", "type": "tp", "attributes": ["name"], "via": ["schema"] },
+      { "entity": "ipv4interface", "schema": "layer3-specific-ipv4", "type": "tp", "attributes": ["name"], "via": ["schema"] },
+      { "entity": "isisinterface", "schema": "igplayer-specific-isis", "type": "tp", "attributes": ["name"], "via": ["schema"] },
+      { "entity": "vpwssap", "schema": "servicelayer-specific-l2vpnvpws", "type": "tp", "attributes": ["name"], "via": ["schema"] },
+      { "entity": "l3vpnsap", "schema": "servicelayer-specific-l3vpn", "type": "tp", "attributes": ["name"], "via": ["schema"] } ] },
+    "Twin_LTP": { "logicalName": "LTP", "topology": [
+      { "entity": "ethernetport", "schema": "layer2-specific-ethernet", "type": "tp", "attributes": ["name"], "via": ["schema"] } ] },
+    "Twin_VRF": { "logicalName": "VRF", "topology": [
+      { "entity": "l3vpninstance", "schema": "servicelayer-specific-l3vpn", "type": "network", "attributes": ["vrfName"], "via": ["schema"] } ] },
+    "Twin_PW": { "logicalName": "PW", "topology": [
+      { "entity": "pw", "schema": "servicelayer-specific-l2vpnvpws", "type": "link", "attributes": ["pwId"], "via": ["schema"] } ] }
+  },
+  "gaps": {
+    "topologyWithoutDte": [{ "entity": "srv6locator", "schema": "srv6-specific", "type": "tp" }],
+    "dteNotFound": [],
+    "dteWithoutCli": [{ "dteId": "Twin_NE", "logicalName": "NE", "topology": ["isisnode"] }],
+    "userDefined": [],
+    "missingCatalogue": { "commands": [], "views": [] }
+  }
+}
