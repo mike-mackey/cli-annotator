@@ -18,7 +18,7 @@ const RULES = [
   [new RegExp(`\\b(password|shared-key|pre-shared-key|key-string|securityname)(\\s+)(?!${MOD}\\b)(?!\\*{4})\\S+`, 'gi'), `$1$2${MASK}`],
   // authentication-mode <alg> [key-id] [<n>] <value>; the optional parts are
   // taken greedily (lookahead + backreference) so the key id is never the value.
-  [new RegExp(`\\b(authentication-mode\\s+(?!keychain\\b)(?!${MOD}\\b)[\\w-]+(?=((?:\\s+key-id)?(?:\\s+\\d+)?))\\2)(\\s+)(?!${MOD}\\b)(?!\\*{4})\\S+`, 'gi'), `$1$3${MASK}`],
+  [new RegExp(`\\b((?:authentication|privacy)-mode\\s+(?!(?:keychain|local|radius|hwtacacs|none|aaa)\\b)(?!${MOD}\\b)[\\w-]+(?=((?:\\s+key-id)?(?:\\s+\\d+)?))\\2)(\\s+)(?!${MOD}\\b)(?!\\*{4})\\S+`, 'gi'), `$1$3${MASK}`],
   [new RegExp(`\\b(snmp-agent\\s+community\\s+(?:read|write|complex))(\\s+)(?!${MOD}\\b)(?!\\*{4})\\S+`, 'gi'), `$1$2${MASK}`],
 ];
 
@@ -38,7 +38,12 @@ export function redactLines(lines) {
     if (inBlob) {
       const end = line.text.indexOf(DELIM);
       if (end === -1) text = indent + MASK;
-      else {
+      else if (/\S/.test(line.text[end + DELIM.length] ?? ' ')) {
+        // A delimiter glued to following text is a new opener (an earlier blob
+        // was truncated), not the closer: mask this line as a fresh blob.
+        text = redactLine(line.text);
+        inBlob = delimCount(line.text) % 2 === 1;
+      } else {
         const rest = line.text.slice(end + DELIM.length);
         text = indent + MASK + redactLine(rest);
         inBlob = delimCount(rest) % 2 === 1;

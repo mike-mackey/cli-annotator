@@ -129,3 +129,21 @@ test('leaves non-secret authentication and address lines unchanged (I2)', () => 
     ' isis authentication-mode md5 key-id 1',
   ]) assert.equal(redactLine(t), t);
 });
+
+test('two consecutive truncated blobs: the second opener is not read as a closer', () => {
+  const out = redactLines([
+    { n: 1, text: 'local-user a password irreversible-cipher %^%#AAAAFAKE1', indent: 0 },
+    { n: 2, text: ' local-user b password irreversible-cipher %^%#FAKE2SECRET', indent: 1 },
+    { n: 3, text: ' FAKE3CONT%^%# tail', indent: 1 },
+    { n: 4, text: 'interface GigabitEthernet0/1/1', indent: 0 },
+  ]).map(l => l.text).join('\n');
+  assert.ok(!out.includes('FAKE'));
+  assert.ok(out.includes('interface GigabitEthernet0/1/1'));
+});
+
+test('AAA method words are not masked as authentication-mode values; privacy-mode values are', () => {
+  assert.equal(redactLine(' authentication-mode hwtacacs local'), ' authentication-mode hwtacacs local');
+  assert.equal(redactLine(' authentication-mode radius local'), ' authentication-mode radius local');
+  const out = redactLine('snmp-agent usm-user v3 u authentication-mode sha FAKE privacy-mode aes128 FAKE2');
+  assert.ok(!out.includes('FAKE'));
+});
