@@ -83,3 +83,10 @@ test('a pathological starred syntax gives up within the step budget', () => {
   assert.equal(s.match(line), null);
   assert.ok(Date.now() - t0 < 1000, `took ${Date.now() - t0} ms`);
 });
+
+test('an extremely long line returns null instead of throwing', () => {
+  const s = compileSyntax('a [ <p> ] *');
+  assert.equal(s.match('a' + ' x'.repeat(8000)), null);
+  assert.deepEqual(s.match('a x y'), { params: { p: 'x' }, literals: 1 });
+  assert.equal(compileCommand({ syntax: ['a [ <p> ] *'] }).match('a' + ' x'.repeat(8000)), null);
+});

@@ -3,6 +3,7 @@
 // it cannot parse degrades to a leading-keyword match flagged prefixOnly.
 const MAX_STEPS = 20000;   // node visits per match call
 const MAX_RESULTS = 1000;  // readings considered per match call
+const MAX_TOKENS = 500;    // longer lines are not matched (generator depth grows per token)
 let steps = 0;
 
 const PARAM_RE = /^<[^<>]+>$/;
@@ -129,11 +130,16 @@ function* runRep(node, toks, st, count) {
 
 function bestReading(root, toks) {
   steps = 0;
+  if (toks.length > MAX_TOKENS) return null;
   let best = null;
   let results = 0;
-  for (const s of run(root, toks, { pos: 0, caps: {}, lits: 0 })) {
-    if (s.pos === toks.length && (!best || s.lits > best.lits)) best = s;
-    if (++results >= MAX_RESULTS) break;
+  try {
+    for (const s of run(root, toks, { pos: 0, caps: {}, lits: 0 })) {
+      if (s.pos === toks.length && (!best || s.lits > best.lits)) best = s;
+      if (++results >= MAX_RESULTS) break;
+    }
+  } catch {
+    return null;  // e.g. stack overflow on deeply nested readings: never throw
   }
   return best;
 }
