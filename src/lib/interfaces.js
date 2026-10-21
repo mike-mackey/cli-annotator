@@ -5,7 +5,19 @@ const ENTRY_RE = /^interface\s+([A-Za-z0-9][\w-]*)\s+<[^<>]+>(\.<[^<>]+>)?(\s+mo
 export function shapeOf(entryCommand) {
   const m = ENTRY_RE.exec(entryCommand ?? '');
   if (!m) return null;
+  if (m[3] && !m[2]) return null;  // "mode l2" only follows a sub-interface
   return { type: m[1], shape: m[2] ? (m[3] ? 'l2sub' : 'sub') : 'main' };
+}
+
+// Interface types that can stand in for each other: physical Ethernet ports
+// (GigabitEthernet, XGigabitEthernet, GE, 10GE, 100GE, Ethernet, …) form one
+// class; every other type (Eth-Trunk, Tunnel, LoopBack, Vlanif, NULL, …) is a
+// class of its own.
+const ETHERNET_RE = /^(?:GigabitEthernet|XGigabitEthernet|GE|\d+GE|Ethernet)$/i;
+
+export function interfaceClass(type) {
+  const t = String(type ?? '');
+  return ETHERNET_RE.test(t) ? 'ethernet' : `type:${t.toLowerCase()}`;
 }
 
 export function buildInterfaceIndex(viewIndex) {

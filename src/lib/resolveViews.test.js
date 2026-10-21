@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { loadBundle } from './bundle.js';
 import { parseConfig } from './parseConfig.js';
 import { resolveViews, mappedViews } from './resolveViews.js';
+import { interfaceClass } from './interfaces.js';
 
 const raw = readFileSync(new URL('../../test/fixtures/bundle-v2.json', import.meta.url), 'utf8');
 const excerpt = readFileSync(new URL('../../test/fixtures/device-excerpt.txt', import.meta.url), 'utf8');
@@ -18,13 +19,12 @@ test('mappedViews collects mapping views and mapped commands\' parent views', ()
   ]);
 });
 
-test('an interface resolves exactly to its own view and equivalently to mapped views of the same shape', () => {
+test('an interface resolves exactly to its own view and equivalently to mapped views of the same shape and class', () => {
   const v = resolveViews(parsed.blocks, bundle);
   const ge = opened(v, parsed, 19);
   assert.deepEqual(ge.candidates, [
     { view: 'ge interface view', via: 'exact', realView: 'ge interface view' },
     { view: '100ge interface view', via: 'equivalent', realView: 'ge interface view' },
-    { view: 'loopback interface view', via: 'equivalent', realView: 'ge interface view' },
   ]);
   assert.deepEqual(ge.params, { 'interface-number': '0/2/1' });
   assert.equal(ge.interface.name, 'GigabitEthernet0/2/1');
@@ -39,9 +39,7 @@ test('an interface resolves exactly to its own view and equivalently to mapped v
   assert.deepEqual(sub.params, { 'interface-number': '0/2/1', 'sub-number': '111' });
 
   const lo = opened(v, parsed, 30);
-  assert.deepEqual(lo.candidates.map(c => [c.view, c.via]), [
-    ['loopback interface view', 'exact'], ['ge interface view', 'equivalent'], ['100ge interface view', 'equivalent'],
-  ]);
+  assert.deepEqual(lo.candidates.map(c => [c.view, c.via]), [['loopback interface view', 'exact']]);
   assert.deepEqual(lo.params, { 'loopback-number': '0' });
 });
 
@@ -86,4 +84,26 @@ test('a v1 bundle only knows the mapped interface views', () => {
   const v = resolveViews(p.blocks, loadBundle(f));
   assert.equal(v[0].resolved, false);
   assert.deepEqual(v[1].candidates, [{ view: '100ge interface view', via: 'exact', realView: '100ge interface view' }]);
+});
+
+test('interfaceClass groups physical Ethernet types; every other type is its own class (I4)', () => {
+  for (const t of ['GigabitEthernet', 'XGigabitEthernet', 'GE', '10GE', '100GE', 'ethernet', 'ge']) assert.equal(interfaceClass(t), 'ethernet', t);
+  for (const t of ['Tunnel', 'LoopBack', 'Vlanif', 'NULL', 'Eth-Trunk']) {
+    assert.notEqual(interfaceClass(t), 'ethernet', t);
+    assert.equal(interfaceClass(t), interfaceClass(t.toUpperCase()), t);
+  }
+  assert.notEqual(interfaceClass('Tunnel'), interfaceClass('LoopBack'));
+});
+
+test('Tunnel and GE do not stand in for each other; GE and 100GE still do (I4)', () => {
+  const f = JSON.parse(raw);
+  f.viewIndex['tunnel interface view'] = { entryCommand: 'interface Tunnel <tunnel-number>', params: ['tunnel-number'], parentView: 'system view' };
+  f.mappings.push({ ...f.mappings[0], id: 'm-tun', view: 'tunnel interface view' });
+  const b = loadBundle(f);
+  const p = parseConfig('interface GigabitEthernet0/2/1\n#\ninterface Tunnel1\n#\ninterface 100GE0/1/0\n#\n');
+  const v = resolveViews(p.blocks, b);
+  const views = i => v[i].candidates.map(c => [c.view, c.via]);
+  assert.deepEqual(views(0), [['ge interface view', 'exact'], ['100ge interface view', 'equivalent']]);
+  assert.deepEqual(views(1), [['tunnel interface view', 'exact']]);
+  assert.deepEqual(views(2), [['100ge interface view', 'exact'], ['ge interface view', 'equivalent']]);
 });

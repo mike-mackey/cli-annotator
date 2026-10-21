@@ -1,7 +1,8 @@
 // Works out which catalogue view(s) each block of a dump is in. Interfaces of
-// another type stand in for the mapped ones ("equivalent") when that is on.
+// another type in the same class (physical Ethernet ports) stand in for the
+// mapped ones ("equivalent") when that is on.
 import { compileSyntax, compileCommand } from './syntax.js';
-import { buildInterfaceIndex, parseInterfaceOpener } from './interfaces.js';
+import { buildInterfaceIndex, parseInterfaceOpener, interfaceClass } from './interfaces.js';
 
 export const SYSTEM_VIEW = 'system view';
 
@@ -46,7 +47,9 @@ function matchOpener(text, parentView, byParent) {
 }
 
 function interfaceCandidates(iface, text, bundle, ifIndex, mapped, equivalence) {
-  const sameShape = ifIndex.views.filter(v => v.shape === iface.shape);
+  // Only interfaces of the same shape and class stand in for each other (see interfaceClass).
+  const cls = interfaceClass(iface.type);
+  const sameShape = ifIndex.views.filter(v => v.shape === iface.shape && interfaceClass(v.type) === cls);
   const exact = sameShape.filter(v => v.type === iface.type).map(v => v.view);
   const candidates = exact.map(view => ({ view, via: 'exact', realView: view }));
   if (equivalence) {

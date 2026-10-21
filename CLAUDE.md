@@ -30,7 +30,7 @@ src/lib/          pure pipeline, no React or DOM (each module has a *.test.js)
   parseConfig.js    lines (n, text, indent, kind) and blocks (opener, parent, depth, children); CRLF/BOM
   syntax.js         compileSyntax / compileCommand: catalogue syntax → matcher; unknown notation → prefixOnly
   interfaces.js     interface types and shapes (main / sub / l2sub) from the bundle's viewIndex
-  resolveViews.js   candidate views per block: exact, equivalent (interface shape), nested scope, owner
+  resolveViews.js   candidate views per block: exact, equivalent (same interface shape and class: Ethernet types only with each other), nested scope, owner
   matchLines.js     line × mapping matches: via exact | equivalent | enclosing | all
   buildInstances.js one instance per (owner block, DTE entity); naming; topology narrowing
   redact.js         masks secrets, keeping the keyword (runs before matching)

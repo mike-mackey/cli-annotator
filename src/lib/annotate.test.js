@@ -14,21 +14,22 @@ test('annotates the excerpt end to end', () => {
   assert.deepEqual(r.options, { equivalence: true, redact: true });
   assert.deepEqual(r.device, { softwareVersion: 'V800R025C10SPC500', sysname: 'PE207' });
   assert.deepEqual(r.coverage.mappings, { total: 12, found: 12 });
-  assert.deepEqual(r.coverage.lines, { config: 22, matched: 15 });
+  assert.deepEqual(r.coverage.lines, { config: 22, matched: 14 });
   assert.equal(r.coverage.byMapping['m-rt'], 2);
-  assert.deepEqual(r.unmatched, [4, 7, 12, 13, 16, 20, 27]);
+  assert.deepEqual(r.unmatched, [4, 7, 12, 13, 16, 20, 27, 30]);
   assert.equal(r.coverage.blocks.total, 7);
   assert.deepEqual(r.coverage.blocks.unresolved.map(b => [b.opener, b.text]), [[12, 'aaa']]);
   assert.deepEqual(pairs(r, 22), [['m-ip', 'exact']]);
   assert.deepEqual(pairs(r, 23), [['m-isisen', 'equivalent']]);
-  assert.deepEqual(pairs(r, 30), [['m-ltp', 'equivalent']]);
+  // LoopBack is not an Ethernet port, so the GE-view mapping m-ltp does not stand in for it.
+  assert.deepEqual(pairs(r, 30), []);
   assert.deepEqual(lineAt(r, 19).views.map(v => [v.view, v.via]).slice(0, 2),
     [['ge interface view', 'exact'], ['100ge interface view', 'equivalent']]);
   assert.equal(lineAt(r, 22).matches[0].instance, 'Twin_FixedNetworkLTP@L19');
   assert.equal(lineAt(r, 22).matches[0].value, '10.0.0.1');
   assert.deepEqual(lineAt(r, 22).matches[0].dte, { id: 'Twin_FixedNetworkLTP', entity: 'FixedNetworkLTP', field: 'IP__addrv4' });
   const loop = r.instances.filter(i => i.opener === 30).map(i => [i.dte.entity, i.via]);
-  assert.deepEqual(loop, [['FixedNetworkLTP', 'exact'], ['LTP', 'equivalent']]);
+  assert.deepEqual(loop, [['FixedNetworkLTP', 'exact']]);
   assert.deepEqual(r.instances.find(i => i.opener === 19 && i.dte.entity === 'FixedNetworkLTP').topology, ['isisinterface', 'l3vpnsap']);
   assert.deepEqual(r.gaps, JSON.parse(raw).gaps);
 });
@@ -82,4 +83,11 @@ test('a secret captured as a mapped value is masked everywhere when redaction is
   const open = annotate(excerpt, f, { redact: false });
   assert.equal(lineAt(open, 13).matches[0].value, '$1c$FAKESECRETFAKE$');
   assert.equal(lineAt(open, 13).redacted, false);
+});
+
+test('an indented line with no open block opens one instead of crashing (I3)', () => {
+  for (const t of [' isis enable 1\n description x', '#\n isis enable 1', 'interface X\n#\n  description y']) {
+    const r = annotate(t, raw);
+    assert.equal(r.lines.length, t.split('\n').length, t);
+  }
 });

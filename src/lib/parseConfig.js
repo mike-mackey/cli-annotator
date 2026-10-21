@@ -53,10 +53,10 @@ export function parseConfig(text) {
     while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
     line.block = stack.length ? stack[stack.length - 1].id : null;
     if (line.block !== null) blocks[line.block].children.push(line.n);
-    if (indent === 0) {
-      open(line);
-      sysname ??= /^sysname\s+(\S+)/.exec(body)?.[1] ?? null;
-    }
+    // A top-level line, or an indented one with no open block (e.g. right
+    // after a separator), opens a block so every config line has an owner.
+    if (indent === 0 || line.block === null) open(line);
+    if (indent === 0) sysname ??= /^sysname\s+(\S+)/.exec(body)?.[1] ?? null;
     last = line;
   });
 

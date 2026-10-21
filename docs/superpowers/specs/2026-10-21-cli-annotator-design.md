@@ -105,10 +105,17 @@ Each module is one step with its own tests.
    **candidate views**, each `{view, via, realView}`:
    - **exact**: the opener matches a view's entry command, or matches a command in that view's
      `enteredBy`. Interface openers are exact in the interface views of their own type and shape.
-   - **equivalent**: the opener is an interface of shape S. Every *mapped* interface view of shape S is
-     added as an equivalent candidate, with `realView` naming the block's own view. For example,
+   - **equivalent**: the opener is an interface of shape S and class C. Every *mapped* interface view of
+     shape S and class C is added as an equivalent candidate, with `realView` naming the block's own view
+     (null when the catalogue has no view of the block's own type and shape). For example,
      `GigabitEthernet0/2/1.77` sits in `ge sub-interface view` and uses the mappings of
      `100ge sub-interface view`. This is on by default and can be switched off in the UI.
+
+     The class (`interfaceClass` in `interfaces.js`) keeps equivalence to interfaces that really are
+     alike: the physical Ethernet types (`GigabitEthernet`, `XGigabitEthernet`, `GE`, `<n>GE`,
+     `Ethernet`, any case) form one class; every other type (`Eth-Trunk`, `Tunnel`, `LoopBack`,
+     `Vlanif`, `NULL`, …) is a class of its own, equivalent only to itself. A LoopBack therefore never
+     uses a GE view's mappings.
 
    Non-interface openers resolve against the views whose `parentView` is in scope. Top-level scope is
    `system view`, and a null `parentView` counts as `system view`. A nested block's scope is its parent's

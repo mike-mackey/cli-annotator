@@ -34,7 +34,6 @@ test('one instance per block and DTE entity, named by key, key field, interface 
     [25, 'LTP', 'GigabitEthernet0/2/1.111'],
     [25, 'PW', 'GigabitEthernet0/2/1.111'],
     [30, 'FixedNetworkLTP', 'LoopBack0'],
-    [30, 'LTP', 'LoopBack0'],
   ]);
 });
 

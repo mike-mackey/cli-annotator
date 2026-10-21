@@ -27,7 +27,6 @@ test('every mapped line of the excerpt matches, with its view relation and value
     [25, 'm-ltp-sub', 'equivalent', 'GigabitEthernet0/2/1.111'],
     [26, 'm-vlan', 'equivalent', '111'],
     [28, 'm-l2vc', 'exact', '7'],
-    [30, 'm-ltp', 'equivalent', 'LoopBack0'],
     [31, 'm-ip', 'exact', '1.1.1.207'],
   ]);
 });

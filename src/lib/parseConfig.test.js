@@ -56,3 +56,11 @@ test('a dump without a header still parses', () => {
   assert.equal(p.sysname, 'X');
   assert.equal(p.lines.length, 3);
 });
+
+test('an indented line with no open block opens a block of its own', () => {
+  const { lines, blocks, sysname } = parseConfig('#\n isis enable 1\n  description x\n sysname NOT-TOP');
+  assert.equal(lines[1].opens, 0);
+  assert.equal(lines[2].block, 0);
+  assert.equal(blocks[0].parent, null);
+  assert.equal(sysname, null);
+});

@@ -74,3 +74,9 @@ test('parseInterfaceOpener handles case and spacing variants', () => {
   assert.equal(p('interface GigabitEthernet0/2/1 mode l2'), null);
   assert.equal(p('interfaceGigabitEthernet0/2/1'), null);
 });
+
+test('shapeOf rejects "mode l2" on a main interface, as parseInterfaceOpener does (I5)', () => {
+  assert.equal(shapeOf('interface 100GE <n> mode l2'), null);
+  assert.equal(parseInterfaceOpener('interface 100GE1/0/1 mode l2', ['100GE']), null);
+  assert.deepEqual(shapeOf('interface 100GE <n>.<m> mode l2'), { type: '100GE', shape: 'l2sub' });
+});

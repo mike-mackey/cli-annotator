@@ -17,7 +17,9 @@ npm run build      # static files in dist/, open from any web server
 1. Drop the bundle and one or more dumps on the page, or paste a dump.
 2. Matched lines get a bar and a chip:
    - solid bar: matched in the mapping's own view
-   - dashed bar: matched in an equivalent interface view, e.g. a GigabitEthernet line using a 100GE mapping
+   - dashed bar: matched in an equivalent interface view, e.g. a GigabitEthernet line using a 100GE mapping.
+     Only physical Ethernet types (GigabitEthernet, XGigabitEthernet, GE, 10GE, 100GE, Ethernet, …) stand in
+     for each other; Eth-Trunk, Tunnel, LoopBack, Vlanif and other types match only their own views.
    - dotted bar: matched through an enclosing block, or a mapping for all views
 3. Click a line for its command, syntax, mappings and topology entities. With no line selected, the side panel
    shows the instances, coverage, warnings and gaps in the bundle.
