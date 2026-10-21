@@ -42,10 +42,10 @@ test('a lone # at child depth closes the sub-block', () => {
 
 test('a dump saved with CRLF endings and a BOM parses like the LF original', () => {
   const lf = parseConfig(excerpt);
-  const crlf = parseConfig('﻿' + excerpt.replace(/\n/g, '\r\n'));
+  const crlf = parseConfig('\uFEFF' + excerpt.replace(/\n/g, '\r\n'));
   assert.equal(crlf.softwareVersion, 'V800R025C10SPC500');
   assert.equal(crlf.lines.length, 33);
-  assert.equal(crlf.lines.some(l => l.text.includes('\r') || l.text.includes('﻿')), false);
+  assert.equal(crlf.lines.some(l => l.text.includes('\r') || l.text.includes('\uFEFF')), false);
   assert.deepEqual(crlf.lines.map(l => [l.kind, l.block, l.opens]), lf.lines.map(l => [l.kind, l.block, l.opens]));
   assert.deepEqual(crlf.blocks, lf.blocks);
 });

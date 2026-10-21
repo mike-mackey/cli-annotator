@@ -1,7 +1,7 @@
 // Splits a `display current-configuration` dump into numbered lines and nested
 // blocks. Never throws: anything it cannot place is still a numbered line.
 export function parseConfig(text) {
-  const raw = String(text ?? '').replace(/^﻿/, '').split(/\r?\n/);
+  const raw = String(text ?? '').replace(/^\uFEFF/, '').split(/\r?\n/);
   if (raw.length && raw[raw.length - 1] === '') raw.pop();
 
   const lines = [];
