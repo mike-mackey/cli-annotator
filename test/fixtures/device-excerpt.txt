@@ -1,0 +1,33 @@
+!Software Version V800R025C10SPC500
+!Last configuration was updated at 2026-10-01 10:00:00+00:00
+#
+sysname PE207
+#
+ip vpn-instance L3VPN_A
+ ipv4-family
+  route-distinguisher 100:1
+  vpn-target 100:1 export-extcommunity
+  vpn-target 100:1 import-extcommunity
+#
+aaa
+ local-user admin password irreversible-cipher $1c$FAKESECRETFAKE$
+#
+isis 207
+ is-level level-2
+ network-entity 49.0001.0010.0100.1207.00
+#
+interface GigabitEthernet0/2/1
+ undo shutdown
+ ip binding vpn-instance L3VPN_A
+ ip address 10.0.0.1 255.255.255.0
+ isis enable 207
+#
+interface GigabitEthernet0/2/1.111
+ vlan-type dot1q 111
+ mtu 1500
+ mpls l2vc instance-name GigabitEthernet0/2/1.111 192.0.2.9 7 no-control-word raw
+#
+interface LoopBack0
+ ip address 1.1.1.207 255.255.255.255
+#
+return
