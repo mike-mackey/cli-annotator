@@ -68,7 +68,8 @@ export function buildInstances(matches, parsed, blockViews, bundle) {
     const name = key?.value ?? (keyField ? fields[keyField][0] : null) ?? blockViews[g.block].interface?.name ?? block.text;
     const first = key ?? ms[0];
 
-    const cands = topologyOf(g.dteId) ?? ms[0].mapping.topology.map(entity => ({ entity, schema: null }));
+    const own = topologyOf(g.dteId);
+    const cands = own?.length ? own : (ms[0].mapping.topology ?? []).map(entity => ({ entity, schema: null }));
     const otherSchemas = new Set();
     for (const id of commandDte.get(g.block) ?? []) {
       if (id === g.dteId) continue;

@@ -7,10 +7,11 @@ Node is managed by nvm. Source it in every non-interactive shell:
 ```bash
 export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"
 npm run dev            # Vite → http://localhost:5173 (watch disabled on WSL; restart to pick up changes)
-npm run build          # dist/, with a CSP meta (connect-src 'none') injected by vite.config.js
+npm run build          # dist/, with a CSP meta (connect-src 'none') injected by vite.config.js (build only, not dev)
 npm test               # node --test
 npm run lint
-node scripts/check-dumps.mjs <bundle.json> <dump…>   # coverage for real dumps; prints no dump lines
+npm run check-dumps -- <bundle.json> <dump…>   # coverage for real dumps; prints no dump lines
+                                                #   (but sysname / VRF / instance names do appear)
 ```
 
 ## Rules
@@ -20,7 +21,11 @@ node scripts/check-dumps.mjs <bundle.json> <dump…>   # coverage for real dumps
 - **Real dumps contain secrets** (cipher passwords, `%^%#…%^%#` strings, RSA keys, SNMP communities). Never copy
   them into this repo, and never print their lines in a terminal, test or script. Print counts and keywords.
 - Nothing in the pipeline throws on dump input. Version and device mismatches are warnings. Only an invalid
-  bundle throws.
+  bundle throws. An indented line with no open block opens a block of its own (parseConfig), so every config
+  line has an owner.
+- Redaction fails closed: an unterminated `%^%#` blob is masked through following lines until it closes.
+- View-family mappings are dropped with a warning (the bundle has no member list).
+- The annotated text export is LF-normalised.
 
 ## Layout
 

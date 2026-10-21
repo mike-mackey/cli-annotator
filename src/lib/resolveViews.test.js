@@ -107,3 +107,14 @@ test('Tunnel and GE do not stand in for each other; GE and 100GE still do (I4)',
   assert.deepEqual(views(1), [['tunnel interface view', 'exact']]);
   assert.deepEqual(views(2), [['100ge interface view', 'exact'], ['ge interface view', 'equivalent']]);
 });
+
+test('an equivalent candidate with no view of the block\'s own type and shape has realView null (M1)', () => {
+  const f = JSON.parse(raw);
+  f.viewIndex['25ge interface view'] = { entryCommand: 'interface 25GE <interface-number>', params: ['interface-number'], parentView: 'system view' };
+  const p = parseConfig('interface 25GE0/1/1.5\n#\n');
+  const v = resolveViews(p.blocks, loadBundle(f));
+  assert.deepEqual(v[0].candidates, [
+    { view: 'ge sub-interface view', via: 'equivalent', realView: null },
+    { view: '100ge sub-interface view', via: 'equivalent', realView: null },
+  ]);
+});

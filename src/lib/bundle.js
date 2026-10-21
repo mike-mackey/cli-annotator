@@ -56,10 +56,14 @@ export function loadBundle(input) {
   const viewMappings = {};
   const noSyntax = [];
   const noView = [];
+  const families = [];
   for (const m of mappings) {
     if (m.sourceType === 'command') {
       if (commands[m.featureId]?.syntax?.length) commandMappings.push(m);
       else noSyntax.push(m.title || m.featureId);
+    } else if (m.sourceType === 'view-family') {
+      // The bundle names the family but not its member views, so it cannot be applied.
+      families.push(m.title || m.viewFamily || m.id);
     } else if (m.view) {
       (viewMappings[m.view] ??= []).push(m);
     } else {
@@ -68,6 +72,9 @@ export function loadBundle(input) {
   }
   if (noSyntax.length) {
     warnings.push(`No catalogue syntax for ${noSyntax.length} mapped command(s), so they are never matched: ${[...new Set(noSyntax)].join(', ')}.`);
+  }
+  if (families.length) {
+    warnings.push(`${families.length} view-family mapping(s) are not applied, since the bundle does not list the family's views: ${[...new Set(families)].join(', ')}.`);
   }
   if (noView.length) warnings.push(`${noView.length} view mapping(s) name no view and are not used: ${noView.join(', ')}.`);
 

@@ -74,3 +74,11 @@ test('a keyless group in a nested block joins the enclosing instance of the same
   assert.deepEqual(vrf.dte.fields, { vrfName: ['L3VPN_A'], rd: ['100:1'], rt: ['100:1'] });
   assert.deepEqual(vrf.matches.map(m => [m.n, m.via]), [[6, 'exact'], [8, 'exact'], [9, 'exact'], [10, 'exact']]);
 });
+
+test('an entity with an empty topology list falls back to the mapping\'s topology (M2)', () => {
+  const f = JSON.parse(raw);
+  f.dteEntities.Twin_IGP.topology = [];
+  const igp = find(build(loadBundle(f)), 15, 'IGP');
+  assert.deepEqual(igp.topologyCandidates, ['isisprocess']);
+  assert.deepEqual(igp.topology, ['isisprocess']);
+});

@@ -6,11 +6,19 @@ import { basename } from 'node:path';
 import { loadBundle } from '../src/lib/bundle.js';
 import { annotate } from '../src/lib/annotate.js';
 
+const USAGE = 'usage: node scripts/check-dumps.mjs [--no-equivalence] <bundle.json> <dump…>';
+const FLAGS = new Set(['--no-equivalence']);
 const args = process.argv.slice(2);
+const unknown = args.filter(a => a.startsWith('--') && !FLAGS.has(a));
+if (unknown.length) {
+  console.error(`unknown option: ${unknown.join(', ')}`);
+  console.error(USAGE);
+  process.exit(2);
+}
 const equivalence = !args.includes('--no-equivalence');
 const [bundlePath, ...dumpPaths] = args.filter(a => !a.startsWith('--'));
 if (!bundlePath || !dumpPaths.length) {
-  console.error('usage: node scripts/check-dumps.mjs [--no-equivalence] <bundle.json> <dump…>');
+  console.error(USAGE);
   process.exit(2);
 }
 

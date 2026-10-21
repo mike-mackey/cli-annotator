@@ -54,7 +54,7 @@ function interfaceCandidates(iface, text, bundle, ifIndex, mapped, equivalence) 
   const candidates = exact.map(view => ({ view, via: 'exact', realView: view }));
   if (equivalence) {
     for (const v of sameShape) {
-      if (mapped.has(v.view) && !exact.includes(v.view)) candidates.push({ view: v.view, via: 'equivalent', realView: exact[0] });
+      if (mapped.has(v.view) && !exact.includes(v.view)) candidates.push({ view: v.view, via: 'equivalent', realView: exact[0] ?? null });
     }
   }
   const entry = exact.length ? bundle.viewIndex[exact[0]]?.entryCommand : null;

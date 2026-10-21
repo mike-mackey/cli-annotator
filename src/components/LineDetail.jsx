@@ -19,7 +19,7 @@ export default function LineDetail({ line, result, bundle, onClose }) {
         return (
           <section key={i} className="match">
             <h3>{m.title} <span className={`badge via-${m.via}`}>{viaText[m.via]}</span></h3>
-            {m.via === 'equivalent' && <p className="muted">Mapped on {m.view}; this block is {m.realView}.</p>}
+            {m.via === 'equivalent' && <p className="muted">Mapped on {m.view}; {m.realView ? <>this block is {m.realView}.</> : 'its own view is not in the bundle.'}</p>}
             <dl>
               <dt>DTE</dt><dd>{m.dte.entity}{m.dte.field ? `.${m.dte.field}` : ''} <span className="muted">({m.relation})</span></dd>
               {m.value != null && <><dt>Value</dt><dd><code>{m.value}</code></dd></>}

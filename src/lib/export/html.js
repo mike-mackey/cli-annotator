@@ -37,7 +37,7 @@ export function toHtmlReport(result, { dumpFile = null } = {}) {
   const dump = result.lines.map(l => {
     const via = l.matches[0]?.via;
     const notes = l.matches.map(m => `<span class="note">${e(matchNote(m, byId))}</span>`).join('');
-    return `<div class="ln${via ? ` via-${via}` : ''}" id="L${l.n}"><a class="n" href="#L${l.n}">${l.n}</a><code>${e(l.text)}</code>${notes}</div>`;
+    return `<div class="ln${via ? ` via-${e(via)}` : ''}" id="L${l.n}"><a class="n" href="#L${l.n}">${l.n}</a><code>${e(l.text)}</code>${notes}</div>`;
   }).join('\n');
 
   return `<!doctype html>

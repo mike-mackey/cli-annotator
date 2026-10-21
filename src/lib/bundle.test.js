@@ -49,3 +49,12 @@ test('a command mapping without catalogue syntax is left out and named in a warn
   assert.equal(b.commandMappings.some(m => m.id === 'm-net'), false);
   assert.match(b.warnings[0], /No catalogue syntax for 1 mapped command\(s\), so they are never matched: network-entity/);
 });
+
+test('view-family mappings are dropped with a warning (no member list in the bundle)', () => {
+  const f = fixture();
+  f.mappings.push({ ...f.mappings[0], id: 'm-fam', sourceType: 'view-family', featureId: null, title: 'FAKE family view', view: 'ge interface view', viewFamily: 'FAKE family view' });
+  const b = loadBundle(f);
+  assert.equal(Object.values(b.viewMappings).flat().some(m => m.id === 'm-fam'), false);
+  assert.equal(b.commandMappings.some(m => m.id === 'm-fam'), false);
+  assert.match(b.warnings.join('\n'), /1 view-family mapping\(s\) are not applied, since the bundle does not list the family's views: FAKE family view/);
+});

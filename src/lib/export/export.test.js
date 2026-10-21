@@ -69,3 +69,32 @@ test('the HTML report escapes script payloads in line text and values', () => {
   assert.equal(/<script/i.test(html), false);
   assert.ok(html.includes('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;'));
 });
+
+test('the HTML report escapes payloads in sysname, instance names, warnings, gaps and via (M4)', () => {
+  const evil = `<script>alert('x')</script>"`;
+  const r = structuredClone(result);
+  r.device.sysname = evil;
+  r.instances[0].name = evil;
+  r.warnings = [evil];
+  r.gaps = {
+    dteWithoutCli: [{ logicalName: evil, topology: [evil] }],
+    topologyWithoutDte: [{ entity: evil, schema: evil }],
+    dteNotFound: [{ topologyEntity: evil, dteEntity: evil }],
+  };
+  const line = r.lines.find(l => l.matches.length);
+  line.matches[0].via = `x" onmouseover="alert(1)`;
+  const html = toHtmlReport(r);
+  assert.equal(/<script/i.test(html), false);
+  assert.equal(html.includes('onmouseover="'), false);
+  assert.ok(html.includes('via-x&quot; onmouseover=&quot;alert(1)'));
+  assert.ok(html.split('&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;&quot;').length - 1 >= 7);
+});
+
+test('annotated text pads notes with the line\'s own indent, tabs included (M5)', () => {
+  const r = structuredClone(result);
+  const line = r.lines.find(l => l.matches.length && l.indent > 0);
+  line.text = '\t' + line.text.trimStart();
+  line.indent = 1;
+  const text = toAnnotatedText(r);
+  assert.ok(text.includes(`${line.text}\n\t! @ `), 'note is tab-indented');
+});

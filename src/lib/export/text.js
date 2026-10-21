@@ -19,7 +19,7 @@ export function toAnnotatedText(result) {
   const out = [];
   for (const l of result.lines) {
     out.push(l.text);
-    const pad = ' '.repeat(l.indent);
+    const pad = l.text.slice(0, l.indent);
     for (const i of heads.get(l.n) ?? []) out.push(`${pad}! @ ${i.dte.entity} ${i.name}`);
     for (const m of l.matches) out.push(`${pad}! @ ${matchNote(m, byId)}`);
   }

@@ -134,7 +134,9 @@ Each module is one step with its own tests.
      `via: 'enclosing'`, never reaching `system view`. This is how `route-distinguisher`, typed in the
      `ipv4-family` sub-block, reaches the VPN instance's mappings.
    - Mappings for `all views` are tried on every config line with `via: 'all'`, unresolved blocks included.
-   - View and view-family mappings attach to the block opener and use its entry parameters, so the
+   - View-family mappings are not applied: the bundle names the family but carries no list of its member
+     views. `loadBundle` drops them with a warning.
+   - View mappings attach to the block opener and use its entry parameters, so the
      `interface-number` of `interface GigabitEthernet0/2/1` is the DTE field of the LTP name mapping. Their
      value is the `cliParameter` value, else the interface name, else the first parameter, else the opener
      text.

@@ -14,6 +14,7 @@ const FILTERS = [['all', 'All'], ['matched', 'Matched'], ['unmatched', 'Unmatche
 export default function App() {
   const [bundle, setBundle] = useState(null);            // {name, loaded}
   const [bundleError, setBundleError] = useState(null);
+  const [dumpError, setDumpError] = useState(null);       // a dump file that could not be read
   const [remembered] = useState(lastBundle);
   const [tabs, setTabs] = useState({ list: [], active: 0 });  // dumps live in memory only
   const [equivalence, setEquivalence] = useState(true);
@@ -34,7 +35,13 @@ export default function App() {
   const line = result && selected ? result.lines[selected - 1] : null;
 
   async function onBundleFiles(files) {
-    const [f] = await readFiles(files);
+    let f;
+    try {
+      [f] = await readFiles(files);
+    } catch (e) {
+      setBundleError(`The bundle file could not be read: ${e.message}`);
+      return;
+    }
     if (!f) return;
     try {
       const loaded = loadBundle(f.text);
@@ -43,6 +50,14 @@ export default function App() {
       rememberBundle(f.name, loaded.generatedAt);
     } catch (e) {
       setBundleError(`${f.name}: ${e.message}`);
+    }
+  }
+  async function onDumpFiles(files) {
+    try {
+      addDumps(await readFiles(files));
+      setDumpError(null);
+    } catch (e) {
+      setDumpError(`A dump file could not be read: ${e.message}`);
     }
   }
   function addDumps(added) {
@@ -64,7 +79,7 @@ export default function App() {
       <InputsBar
         bundle={bundle} remembered={remembered}
         onBundleFiles={onBundleFiles}
-        onDumpFiles={async files => addDumps(await readFiles(files))}
+        onDumpFiles={onDumpFiles}
         onPaste={text => addDumps([{ name: `pasted-${tabs.list.length + 1}.txt`, text }])}
         dumps={tabs.list} active={tabs.active}
         onSelectDump={i => { setTabs(t => ({ ...t, active: i })); setSelected(null); }}
@@ -73,6 +88,7 @@ export default function App() {
         redact={redact} onRedact={setRedact}
       />
       {bundleError && <p className="error">{bundleError}</p>}
+      {dumpError && <p className="error">{dumpError}</p>}
       {error && <p className="error">{error}</p>}
       {!result ? (
         <div className="empty">
