@@ -1,6 +1,7 @@
 # CLI annotator — design
 
-Date: 2026-10-21. Status: draft for review.
+Date: 2026-10-21. Status: approved 2026-10-21; refined while writing the implementation plan
+(`docs/superpowers/plans/2026-10-21-cli-annotator.md`).
 
 ## Purpose
 
@@ -19,7 +20,8 @@ annotated text.
 
 - **Client-side only.** The dumps hold secrets (`irreversible-cipher` passwords, RSA public keys,
   `%^%#…%^%#` encrypted strings). Nothing is uploaded and no server is needed; the app is static files.
-  Dumps are never written to browser storage.
+  The built page carries a Content-Security-Policy meta with `connect-src 'none'`, and `src/` has no
+  `fetch` or XHR. Dumps are never written to browser storage.
 - **Version tolerance.** The dumps are V800R025C10SPC500 and the bundle is V800R022C00SPC600. A version or
   device mismatch is a warning, never a refusal.
 - **The bundle is the only model input.** The annotator never calls ontology-ui's API.
@@ -70,23 +72,26 @@ Each module is one step with its own tests.
    - interface-view classes
 
    It throws a readable error on a wrong format.
-2. **`parseConfig.js`: `parseConfig(text)`** returns
-   `{softwareVersion, blocks, lines}`.
+2. **`parseConfig.js`: `parseConfig(text)`** returns `{softwareVersion, sysname, lines, blocks}`.
    - Lines starting with `!` are header or comment lines. The `!Software Version …` line gives
-     `softwareVersion`.
-   - A top-level line opens a block; its more-indented lines are children, and nested indentation opens
-     nested blocks. A lone ` #` at child depth closes the current sub-block.
-   - `#` lines at the top level separate blocks; `return` ends the configuration.
-   - Every line keeps its 1-based number and raw text. CRLF input is accepted.
+     `softwareVersion`; the `sysname` command gives `sysname`.
+   - Every top-level config line opens a block (most have no children). A more-indented config line turns
+     the config line before it into the opener of a nested block.
+   - `#` lines are separators and `return` ends the configuration.
+   - Every line keeps its 1-based number and raw text. CRLF input and a UTF-8 BOM are accepted.
 3. **`syntax.js`: `compileSyntax(syntax)`** turns one catalogue syntax string into a matcher:
-   - Supported notation: literal keywords, `<param>`, `[ optional ]`, `{ a | b }` (nesting allowed), a
-     trailing `*` (repeatable group) and `&<1-n>` (repeat a value).
-   - `match(line)` returns the captured `{param: value}` or null.
-   - Keywords match case-insensitively, as whole tokens.
-   - A `<param>` captures one token.
-   - An interface-type keyword followed by `<interface-number>` also matches the joined dump form
-     (`GigabitEthernet0/2/1`).
-   - Unsupported notation degrades to "keyword prefix only" and is reported, never thrown.
+   - Supported notation: literal keywords, `<param>`, composite tokens such as
+     `<interface-number>.<sub-number>`, `[ optional ]`, `{ a | b }` (nesting allowed), a trailing `*`
+     (repeatable group) and `&<1-n>` (repeat a value; the first is captured).
+   - `match(line)` returns the captured `{param: value}` or null. A reading must consume the whole line; the
+     reading with the most literal keywords wins.
+   - Keywords match case-insensitively, as whole tokens. A `<param>` captures one token.
+   - A keyword followed by a parameter also matches the joined dump form (`GigabitEthernet0/2/1`,
+     `LoopBack0`).
+   - Each match has a step budget, so pathological syntax cannot hang the page.
+   - Unsupported notation degrades to "keyword prefix only" (`prefixOnly`) and is reported as a warning,
+     never thrown. A prefix-only match never resolves a view.
+   - `compileCommand` picks the best of a command's syntax forms and skips `undo …` forms.
 4. **`interfaces.js`** reads the interface-type keyword (`GigabitEthernet`, `25GE`, `100GE`, `Eth-Trunk`,
    `LoopBack`, `Tunnel`, …) from each `viewIndex` entry command and gives each interface view a
    **shape**:
@@ -94,46 +99,68 @@ Each module is one step with its own tests.
    - `sub`: `interface T <n>.<s>`
    - `l2sub`: `interface T <n>.<s> mode l2`
 
-   It also builds `typeOf(name)`, which splits a dump name like `25GE0/2/8.3` into type, number and
-   sub-number. The longest known type keyword wins, and matching is case-insensitive.
-5. **`resolveViews.js`: `resolveViews(blocks, bundle)`** gives each block opener a list of **candidate
-   views**:
+   It also parses a dump opener like `interface 25GE0/2/8.3` into type, number and sub-number. The longest
+   known type keyword wins. Matching is case-insensitive and allows a space between type and number.
+5. **`resolveViews.js`: `resolveViews(blocks, bundle, {equivalence})`** gives each block a list of
+   **candidate views**, each `{view, via, realView}`:
    - **exact**: the opener matches a view's entry command, or matches a command in that view's
-     `enteredBy`.
-   - **equivalent**: the opener is an interface of type T and shape S. Every *mapped* interface view of
-     shape S is added as an equivalent candidate, labelled with the view it stands in for, e.g.
-     `GigabitEthernet0/2/1.77` in `ge sub-interface view`, using mappings from `100ge sub-interface view`.
-     This is on by default and can be switched off in the UI.
+     `enteredBy`. Interface openers are exact in the interface views of their own type and shape.
+   - **equivalent**: the opener is an interface of shape S. Every *mapped* interface view of shape S is
+     added as an equivalent candidate, with `realView` naming the block's own view. For example,
+     `GigabitEthernet0/2/1.77` sits in `ge sub-interface view` and uses the mappings of
+     `100ge sub-interface view`. This is on by default and can be switched off in the UI.
 
-   Nested blocks resolve against the views whose parent is the enclosing view. Top-level lines sit in
-   `system view`. Lines in an unresolved block are only checked against the `all views` pseudo-view.
-6. **`matchLines.js`** matches each line against the syntax of the command mappings for every candidate
-   view of its block, plus `all views` and `system view` for top-level lines. A line can match several
-   mappings. The result is `{line, view, via: 'exact'|'equivalent', mapping, values}`, where `values`
-   holds the mapping's `cliParameter` value when that parameter was captured.
+   Non-interface openers resolve against the views whose `parentView` is in scope. Top-level scope is
+   `system view`, and a null `parentView` counts as `system view`. A nested block's scope is its parent's
+   candidates, and it inherits the `via` of the candidate it was found under. Exact candidates come before
+   equivalent ones.
 
-   View and view-family mappings attach to the block opener and use its entry parameters, so the
-   `interface-number` of `interface GigabitEthernet0/2/1` is the DTE field of the LTP name mapping.
-7. **`buildInstances.js`** produces one **instance** per (block, DTE entity):
-   - Key-mapping values (`isKey`) name it. Without a key, the block opener names it.
-   - Other matched values become `fields: {dteField: value}`. One value has several lines, a field
-     collects all of them.
-   - `topology` is the bundle's candidates for that DTE entity. When a block also matches a mapping whose
-     DTE entity is linked only to a subset of those candidates, the candidates are narrowed to that
-     subset. For example, `isis enable` narrows LTP → `isisinterface`. The full candidate list is kept as
-     `topologyCandidates`.
+   Each block also gets an **owner**: itself when it resolved, else its parent's owner. Matches in an
+   unresolved nested block belong to the enclosing instance.
+6. **`matchLines.js`** matches lines against mappings. A match is
+   `{n, block, view, via: 'exact'|'equivalent'|'enclosing'|'all', realView, mapping, params, value, prefixOnly}`.
+   - A command mapping's **scope** is its command's `parentViews` plus the mapping's `view`. The first
+     candidate in scope wins, so exact beats equivalent.
+   - A block opener is matched in its parent's candidates (`system view` at the top level); other lines in
+     their own block's candidates. A line can match several mappings.
+   - **Enclosing fallback:** when no scoped mapping matches, the enclosing blocks are tried outwards with
+     `via: 'enclosing'`, never reaching `system view`. This is how `route-distinguisher`, typed in the
+     `ipv4-family` sub-block, reaches the VPN instance's mappings.
+   - Mappings for `all views` are tried on every config line with `via: 'all'`, unresolved blocks included.
+   - View and view-family mappings attach to the block opener and use its entry parameters, so the
+     `interface-number` of `interface GigabitEthernet0/2/1` is the DTE field of the LTP name mapping. Their
+     value is the `cliParameter` value, else the interface name, else the first parameter, else the opener
+     text.
+   - A command match's `value` is the captured `cliParameter` value, or null.
+7. **`buildInstances.js`** produces one **instance** per (owner block, DTE entity):
+   - A group with no key match joins the enclosing block's group for the same DTE entity, if there is one.
+   - The name is the key match's value. Else it is the value of a field a key mapping of that entity uses
+     (VRF `vrfName` from `ip binding vpn-instance`). Else the interface name, else the opener text.
+   - Matched values become `fields: {dteField: [values]}`, deduplicated in line order.
+   - `topologyCandidates` is the bundle's topology list for the DTE entity. `topology` narrows it to the
+     union of two rules, and keeps all candidates when neither keeps any:
+     - **Keyword:** candidates whose name contains a distinctive word of a matched command's title
+       (`isis enable` → `isisinterface`).
+     - **Schema:** candidates in the same topology schema as the topology of another DTE entity reached
+       from the same block (`ip binding vpn-instance` → VRF → `l3vpninstance` → `l3vpnsap`).
 8. **`redact.js`** masks the secret value on a line and keeps its keyword, e.g.
    `irreversible-cipher ****`. It covers:
-   - `cipher` / `irreversible-cipher` / `password` / `authentication` values
-   - `%^%#…%^%#` strings
+   - `cipher` / `irreversible-cipher` / `simple` / `plain` / `password` / `authentication-mode` values
+   - `%^%#…%^%#` strings and `$1x$…` hashes
    - `public-key-code begin … end` bodies
    - `snmp-agent community` strings
 
-   Redaction is applied to all exports by default; there is a toggle.
-9. **`annotate.js`: `annotate(text, bundle, options)`** runs the whole pipeline and returns:
-   - `{device, warnings[], lines[], instances[], unmatched, coverage}`
-   - `lines[i]`: the line's text, its block's view or views, and the matches on it.
-   - `coverage`: mapped commands found vs. bundle mappings, plus blocks whose view is unknown.
+   Redaction runs **before** matching, so captured values, instance names, the page and every export are
+   redacted. It is on by default; switching it off in the UI shows a warning next to the exports.
+9. **`annotate.js`: `annotate(text, bundle, {equivalence = true, redact = true})`** runs the whole pipeline.
+   `bundle` may be a JSON string, a parsed object or a loaded bundle. It returns:
+   - `{options, device: {softwareVersion, sysname}, bundle, warnings[], lines[], blocks[], instances[], gaps,
+     unmatched, coverage}`
+   - `lines[i]`: the line's text, kind, whether it was redacted, its block's candidate views and the
+     matches on it, each linked to its instance.
+   - `unmatched`: config lines with no match.
+   - `coverage`: mappings found vs. bundle mappings (and lines per mapping), matched vs. config lines,
+     blocks and the blocks whose view is unknown.
 
 ## Outputs (`src/lib/export/`)
 
@@ -166,8 +193,8 @@ One page with three areas:
 
   Switching between several dumps uses a tab per dump.
 - **Annotated dump** (centre): line numbers and the dump text.
-  - A matched line has a coloured left bar (solid for exact, dashed for equivalent) and an inline chip
-    `LTP.name`.
+  - A matched line has a coloured left bar (solid for exact, dashed for equivalent, dotted for enclosing
+    or all views) and an inline chip `LTP.name`.
   - Clicking a line opens the detail panel.
   - Filters: matched only, unmatched only, search.
 - **Side panel**: the clicked line's command (title, syntax, parameter descriptions), each mapping (DTE
@@ -213,10 +240,12 @@ One page with three areas:
 cli-annotator/
   package.json  vite.config.js  index.html  eslint.config.js  README.md  CLAUDE.md
   src/main.jsx  src/App.jsx  src/App.css
+  src/files.js      read dropped files, download a Blob
+  src/lastBundle.js remember the last bundle's name and time (+ browser.test.js)
   src/components/   InputsBar, DumpView, LineDetail, SummaryPanel, ExportBar
   src/lib/          bundle, parseConfig, syntax, interfaces, resolveViews, matchLines,
                     buildInstances, redact, annotate (+ *.test.js)
-  src/lib/export/   json, text, html (+ tests)
+  src/lib/export/   json, text, html (+ export.test.js)
   test/fixtures/    bundle-v2.json, device-excerpt.txt
-  scripts/check-dumps.mjs
+  scripts/check-dumps.mjs (+ test)
 ```
